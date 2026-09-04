@@ -1,3 +1,4 @@
+library("scp")
 data(leduc_minimal, package = "scp")
 
 test_that("Convert scpModel to/from list", {
