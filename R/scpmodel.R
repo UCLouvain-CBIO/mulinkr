@@ -46,3 +46,14 @@ hasScpModel <- function(object) {
     any(sapply(metadata(object),
                function(x) inherits(x, "ScpModel")))
 }
+
+scpModelAsList <- function(object) {
+    stopifnot(inherits(object, "SummarizedExperiment"))
+    if (hasScpModel(object)) {
+        i <- which(sapply(metadata(object),
+                          function(x) inherits(x, "ScpModel")))
+        for (j in i)
+            metadata(object)[[j]] <- scpModelToList(metadata(object)[[j]])
+    }
+    object
+}
