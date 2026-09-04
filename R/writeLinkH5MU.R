@@ -1,171 +1,9 @@
 # Code from:
 # https://github.com/lucas-diedrich/ms-scverse-bioconductor/blob/main/R/io.R
 
-
-## Convert between .h5mu files and QFeatures objects, in both directions.
-##
-## MuData::readH5MU()/writeH5MU() cover the MultiAssayExperiment skeleton
-## (assays, colData, sampleMap, uns). Neither touches the *global* .varp group,
-## because MultiAssayExperiment has nowhere to put a pairwise feature matrix.
-## That group is where mulink keeps the feature graph, so it is read and written
-## separately, against a QFeatures object, whose AssayLinks can represent it.
-##
-##   readLinkH5MU()   .h5mu -> QFeatures
-##   writeLinkH5MU()    QFeatures -> .h5mu
-
-library(QFeatures)
-library(MuData)
-library(MultiAssayExperiment)
-library(rhdf5)
-library(Matrix)
-library(S4Vectors)
-
 ## Internals of MuData that a patched readH5MU() would call directly.
-.h5autoclose <- MuData:::h5autoclose
-.read_matrix <- MuData:::read_matrix
-.read_with_index <- MuData:::read_with_index
 .write_matrix <- MuData:::write_matrix
 .write_data_frame <- MuData:::write_data_frame
-
-
-#' Global feature names of an .h5mu file, in file order.
-.var_names <- function(h5) {
-    rownames(.read_with_index(.h5autoclose(h5 & "var")))
-}
-
-
-#' Read the global `.varp` group of an .h5mu file.
-#'
-#' Mirrors the `varp` branch of `MuData:::read_modality()`, which reads a
-#' modality's pairwise feature matrices into `rowPair()`. Here the matrices are
-#' returned instead, since they span all modalities and belong to no single one.
-#'
-#' `read_matrix()` transposes to maintain directionality as observation/feature directionality is inversed between
-#' scverse and Bioconductor functions
-#'
-#' @param file Path to the .h5mu file.
-#' @param keys Names to read from `.varp`. All of them if `NULL`.
-#'
-#' @return A named list of sparse matrices, with the global feature names as
-#'     dimnames.
-read_varp <- function(file, keys = NULL) {
-    h5 <- H5Fopen(file, flags = "H5F_ACC_RDONLY", native = FALSE)
-    on.exit(H5Fclose(h5), add = TRUE)
-
-    if (!H5Lexists(h5, "varp")) return(list())
-
-    var_names <- .var_names(h5)
-    available <- h5ls(.h5autoclose(h5 & "varp"), recursive = FALSE)$name
-    if (is.null(keys)) keys <- available
-
-    missing_keys <- setdiff(keys, available)
-    if (length(missing_keys))
-        warning("No '", paste(missing_keys, collapse = "', '"), "' in .varp.")
-
-    matrices <- lapply(setNames(nm = intersect(keys, available)), function(key) {
-        m <- .read_matrix(.h5autoclose(h5 & paste("varp", key, sep = "/")))
-        if (!is(m, "dsparseMatrix")) {
-            warning("Pairwise varp matrix ", key, " is not a sparse matrix. ",
-                    "Only sparse matrices are currently supported, skipping...")
-            return(NULL)
-        }
-        m <- t(m)
-        dimnames(m) <- list(var_names, var_names)
-        m
-    })
-
-    matrices[!vapply(matrices, is.null, logical(1))]
-}
-
-
-#' Build a `Hits` object from an adjacency submatrix.
-#'
-#' Rows are parent features, columns are child features. `names_from`/`names_to`
-#' are required by QFeatures' validity checks (`.checkLinksInHits`), which verify
-#' that every linked feature exists in the corresponding assay.
-#'
-#' `sort.by.query = TRUE` yields a `SortedByQueryHits`, which is what
-#' `findMatches()` and therefore the rest of QFeatures produces.
-hits_from_adjacency <- function(adj) {
-    nz <- Matrix::summary(as(adj, "TsparseMatrix"))
-    nz <- nz[order(nz$i, nz$j), , drop = FALSE]
-
-    hits <- S4Vectors::Hits(from = nz$i,
-                            to = nz$j,
-                            nLnode = nrow(adj),
-                            nRnode = ncol(adj),
-                            sort.by.query = TRUE)
-
-    S4Vectors::mcols(hits)$names_from <- rownames(adj)[nz$i]
-    S4Vectors::mcols(hits)$names_to <- colnames(adj)[nz$j]
-    hits
-}
-
-
-#' Turn a feature-mapping matrix into one `AssayLink` per assay.
-#'
-#' An edge u -> v in `.varp` means v's assay was derived from u's, so edges are
-#' grouped by their *target* modality: that is the child, and the modalities the
-#' edges come from are its parents. Grouping matters — `AssayLinks` is keyed by
-#' child name, so adding links pair-by-pair would keep only the last parent of a
-#' fan-in.
-assay_links_from_feature_mapping <- function(experiments,
-                                             feature_mapping,
-                                             fcol = NA_character_) {
-    mod_names <- names(experiments)
-    var_names <- rownames(feature_mapping)
-
-    ## The mulink convention requires globally unique feature names, so matching
-    ## each modality's rownames against the global index is unambiguous.
-    positions <- lapply(experiments, function(se) match(rownames(se), var_names))
-    unmatched <- vapply(positions, anyNA, logical(1))
-    if (any(unmatched))
-        stop("Features of modality/modalities '",
-             paste(mod_names[unmatched], collapse = "', '"),
-             "' are absent from the global .var index.")
-
-    has_edges <- function(adj) length(adj@x) > 0L && any(adj@x != 0)
-
-    edges <- list()
-    for (from in mod_names) {
-        for (to in setdiff(mod_names, from)) {
-            adj <- feature_mapping[positions[[from]], positions[[to]], drop = FALSE]
-            if (!has_edges(adj)) next
-
-            dimnames(adj) <- list(rownames(experiments[[from]]),
-                                  rownames(experiments[[to]]))
-            edges[[to]] <- c(edges[[to]], setNames(list(adj), from))
-        }
-    }
-
-    within_modality <- vapply(mod_names, function(m) {
-        has_edges(feature_mapping[positions[[m]], positions[[m]], drop = FALSE])
-    }, logical(1))
-    if (any(within_modality))
-        warning("Ignoring edges within modality/modalities '",
-                paste(mod_names[within_modality], collapse = "', '"),
-                "'; an assay cannot be linked to itself.")
-
-    ## One AssayLink per assay, in assay order: QFeatures' validity checks
-    ## compare names(assayLinks) to names(object) with identical().
-    AssayLinks(lapply(mod_names, function(to) {
-        parents <- edges[[to]]
-        if (is.null(parents)) return(AssayLink(name = to))
-
-        hits <- lapply(parents, hits_from_adjacency)
-        if (length(hits) > 1L) {
-            hits <- S4Vectors::List(hits)
-            names(hits) <- names(parents)
-        } else {
-            hits <- hits[[1L]]
-        }
-
-        AssayLink(name = to,
-                  from = names(parents),
-                  fcol = rep(fcol, length(parents)),
-                  hits = hits)
-    }))
-}
 
 
 #' Assays that are sample blocks of another assay, not feature levels of their own.
@@ -179,6 +17,12 @@ assay_links_from_feature_mapping <- function(experiments,
 #'
 #' @return A named character vector: names are the block assays, values the
 #'     assay each collapses into.
+#' @importClassesFrom S4Vectors List
+#' @importFrom methods is
+#' @importFrom QFeatures assayLink
+#' @importFrom S4Vectors mcols
+#' @importFrom stats setNames
+#' @noRd
 sample_blocks <- function(object) {
     nms <- names(object)
 
@@ -246,6 +90,8 @@ sample_blocks <- function(object) {
 #' @param blocks The output of `sample_blocks()`.
 #'
 #' @return The names of the blocks that do not match.
+#' @importFrom SummarizedExperiment assay
+#' @noRd
 block_value_mismatch <- function(object, blocks) {
     mismatched <- vapply(names(blocks), function(from) {
         a <- as.matrix(assay(object[[from]]))
@@ -255,45 +101,6 @@ block_value_mismatch <- function(object, blocks) {
     }, logical(1))
 
     names(blocks)[mismatched]
-}
-
-
-#' Read an .h5mu file and create a `QFeatures` object.
-#'
-#' @param path Path to the .h5mu file.
-#' @param feature_mapping_key Key of the feature graph in the global `.varp`.
-#' @param backed Passed to `MuData::readH5MU()`.
-#'
-#' @return A `QFeatures` object. Assays and their links come from the file; if
-#'     the `.varp` key is absent the assays are returned unlinked.
-readLinkH5MU <- function(path,
-                                feature_mapping_key = "feature_mapping",
-                                backed = FALSE) {
-    mae <- MuData::readH5MU(path, backed = backed)
-    feature_mapping <- read_varp(path, keys = feature_mapping_key)[[feature_mapping_key]]
-
-    assay_links <- if (is.null(feature_mapping)) {
-        AssayLinks(names = names(experiments(mae)))
-    } else {
-        ## fcol normally names the rowData column a link was derived from. The
-        ## link comes from .varp here, so record that key instead; the rowData
-        ## column that produced it upstream lives in .uns (see ROADMAP.md).
-        assay_links_from_feature_mapping(experiments(mae),
-                                         feature_mapping,
-                                         fcol = feature_mapping_key)
-    }
-
-    ## Promotion mirrors the QFeatures() constructor, which builds a
-    ## MultiAssayExperiment and copies its slots across.
-    qf <- new("QFeatures",
-              ExperimentList = experiments(mae),
-              colData = colData(mae),
-              sampleMap = sampleMap(mae),
-              metadata = metadata(mae),
-              assayLinks = assay_links)
-
-    validObject(qf)
-    qf
 }
 
 
@@ -321,6 +128,7 @@ readLinkH5MU <- function(path,
 #'
 #' @return A list of the global feature `key`s and, parallel to them, the `assay`
 #'     and original `id` each came from.
+#' @noRd
 feature_index <- function(object,
                           prefix = c("collision", "always", "never"),
                           sep = ":",
@@ -366,6 +174,13 @@ feature_index <- function(object,
 #'     assay it collapses into, so they are dropped with it.
 #'
 #' @return A `p x p` sparse matrix over the global feature axis.
+#' @importClassesFrom S4Vectors List
+#' @importFrom methods is
+#' @importFrom Matrix sparseMatrix
+#' @importFrom QFeatures assayLink
+#' @importFrom S4Vectors mcols
+#' @importFrom stats setNames
+#' @noRd
 feature_mapping_from_assay_links <- function(object,
                                              index = feature_index(object),
                                              assays = names(object)) {
@@ -433,6 +248,7 @@ feature_mapping_from_assay_links <- function(object,
 #'
 #' @return A list of the possibly modified `df` and the names of the `cast`
 #'     columns.
+#' @noRd
 cast_nullable_columns <- function(df, context) {
     affected <- vapply(df, function(x) (is.integer(x) || is.logical(x)) && anyNA(x),
                        logical(1))
@@ -458,6 +274,8 @@ cast_nullable_columns <- function(df, context) {
 #'
 #' @param file Path to the .h5mu file.
 #' @param keys The global feature names, in file order.
+#' @importFrom rhdf5 H5Fopen H5Fclose H5Lexists H5Ldelete
+#' @noRd
 write_var_index <- function(file, keys) {
     h5 <- H5Fopen(file, flags = "H5F_ACC_RDWR", native = FALSE)
     on.exit(H5Fclose(h5), add = TRUE)
@@ -484,6 +302,10 @@ write_var_index <- function(file, keys) {
 #' @param file Path to the .h5mu file.
 #' @param key Name to store the matrix under in `.varp`.
 #' @param mat A sparse matrix over the global feature axis.
+#' @importClassesFrom Matrix RsparseMatrix
+#' @importFrom methods as
+#' @importFrom rhdf5 H5Fopen H5Fclose H5Lexists H5Ldelete H5Gopen H5Gcreate H5Gclose
+#' @noRd
 write_varp <- function(file, key, mat) {
     h5 <- H5Fopen(file, flags = "H5F_ACC_RDWR", native = FALSE)
     on.exit(H5Fclose(h5), add = TRUE)
@@ -535,6 +357,14 @@ write_varp <- function(file, key, mat) {
 #' @param overwrite Whether to replace `path` if it already exists.
 #'
 #' @return `path`, invisibly.
+#' @importClassesFrom Matrix Matrix
+#' @importClassesFrom QFeatures QFeatures
+#' @importFrom methods is
+#' @importFrom MuData writeH5MU
+#' @importFrom MultiAssayExperiment ExperimentList experiments
+#' @importFrom rhdf5 H5Fopen H5Fclose
+#' @importFrom SummarizedExperiment colData "colData<-" rowData "rowData<-"
+#' @export
 writeLinkH5MU <- function(object, path,
                                feature_mapping_key = "feature_mapping",
                                prefix = c("collision", "always", "never"),
