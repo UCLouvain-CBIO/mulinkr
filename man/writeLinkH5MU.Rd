@@ -33,23 +33,3 @@ MultiAssayExperiment skeleton; the feature graph held in \code{AssayLinks} has n
 place there, so it is written separately to the global \code{.varp} as a \verb{p x p}
 sparse adjacency matrix over the global \code{.var} index.
 }
-\details{
-Assays that are \emph{sample blocks} of another assay — scp's one-assay-per-MS-run
-layout, later merged by \code{joinAssays()} — are collapsed into the assay they
-join into rather than written as modalities of their own; see
-\code{sample_blocks()} for the rule and what went wrong without it.
-
-Two parts of the specification are deliberately not implemented here and are
-tracked separately in ROADMAP.md:
-\itemize{
-\item The layer half of the modality/layer split. A one-to-one transformation on
-\emph{identical} rows and columns, such as \code{logTransform()}, still becomes a
-second modality plus an edge rather than a layer of its parent. Only the
-sample-block half of the rule is implemented.
-\item \code{uns["mulink"]["assays"]}, which records \code{AssayLink@fcol} and which layer
-an inter-modality edge starts from. \code{fcol} therefore does not survive this
-write, and \code{readLinkH5MU()} substitutes the \code{.varp} key for it. It is also
-what a reader would need to split the collapsed blocks back out, so this
-write is lossy for them: \code{readLinkH5MU()} returns the joined assays only.
-}
-}

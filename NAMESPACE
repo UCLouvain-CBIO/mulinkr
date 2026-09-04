@@ -31,7 +31,6 @@ importFrom(S4Vectors,
 importFrom(SummarizedExperiment,
   "colData<-",
   "rowData<-",
-  assay,
   colData,
   rowData
 )
