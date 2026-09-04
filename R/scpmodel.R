@@ -1,3 +1,5 @@
+##' @importFrom stats as.formula
+##' @importClassesFrom scp ScpModel ScpModelFit
 scpModelToList <- function(mod) {
     stopifnot(inherits(mod, "ScpModel"))
     scpModelFitListToList <- function(fit) {
@@ -20,6 +22,7 @@ scpModelToList <- function(mod) {
                                  scpModelFitListToList))
 }
 
+##' @importFrom S4Vectors List
 listToScpModel <- function(x) {
     listToScpModelFit <- function(x)
         new("ScpModelFit",
@@ -36,9 +39,10 @@ listToScpModel <- function(x) {
         scpModelFormula = as.formula(x$scpModelFormula),
         scpModelInputIndex = x$scpModelInputIndex,
         scpModelFilterThreshold = x$scpModelFilterThreshold,
-        scpModelFitList = List(lapply(ll$scpModelFitList, listToScpModelFit)))
+        scpModelFitList = List(lapply(x$scpModelFitList, listToScpModelFit)))
 }
 
+##' @importFrom S4Vectors metadata
 hasScpModel <- function(object) {
     stopifnot(inherits(object, "SummarizedExperiment"))
     if (!length(metadata(object)))
@@ -47,6 +51,7 @@ hasScpModel <- function(object) {
                function(x) inherits(x, "ScpModel")))
 }
 
+##' @importFrom S4Vectors metadata<-
 scpModelAsList <- function(object) {
     stopifnot(inherits(object, "SummarizedExperiment"))
     if (hasScpModel(object)) {
