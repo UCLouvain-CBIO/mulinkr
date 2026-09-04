@@ -14,12 +14,14 @@ Imports:
     HDF5Array,
     Matrix,
     MuData,
+    MultiAssayExperiment,
     QFeatures,
+    S4Vectors,
+    SummarizedExperiment,
     methods,
     rhdf5
-Suggests:
-    scp
 Config/roxygen2/version: 8.1.0
 Suggests:
+    scp,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
