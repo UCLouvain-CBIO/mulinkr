@@ -30,6 +30,7 @@
 #'     dimnames.
 #' @importFrom methods is
 #' @importClassesFrom Matrix dsparseMatrix
+#' @importMethodsFrom Matrix t
 #' @importFrom rhdf5 H5Fopen H5Fclose H5Lexists h5ls
 #' @importFrom stats setNames
 #' @noRd
