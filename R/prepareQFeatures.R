@@ -1,19 +1,54 @@
 #' Prepare a `QFeatures` object for .h5mu writing.
 #'
-#' `prepareQFeatures()` makes feature row names globally unique across assays by
-#' prefixing them with their assay name when needed.
+#' `prepareQFeatures()` makes feature row names globally unique across assays
+#' by prefixing them with their assay name when needed. It also change any date
+#' columns of the global `colData`, individual `rowData` and individual
+#' `colData` to a formatted character type.
 #'
 #' @param object A `QFeatures` object.
 #' @param sep Separator between the assay name and feature name.
 #'
 #' @return A prepared `QFeatures` object.
+#' @importFrom MultiAssayExperiment ExperimentList experiments
+#' @importFrom SummarizedExperiment "colData<-" "rowData<-" colData rowData
+#' @export
+prepareQFeatures <- function(object, sep = ":") {
+    object <- makeRownamesUnique(object, sep)
+    colData(object) <- convertDateColumns(colData(object))
+    cleaned <- lapply(experiments(object), function(set) {
+        rowData(set) <- convertDateColumns(rowData(set))
+        colData(set) <- convertDateColumns(colData(set))
+        if (hasScpModel(set)) {
+            warning("Your QFeatures object has a scpModel object in one of ",
+                "his set, it will be converted to a simplier list",
+                "representation")
+            set <- scpModelAsList(set)
+        }
+        set
+    })
+    object@ExperimentList <- ExperimentList(cleaned)
+    object
+}
+#' @noRd
+convertDateColumns <- function(dfr) {
+    for (col in names(dfr)) {
+        x <- dfr[[col]]
+
+        if (inherits(x, "POSIXt")) {
+            dfr[[col]] <- format(as.POSIXct(x), "%Y-%m-%d %H:%M:%S")
+        } else if (inherits(x, "Date")) {
+            dfr[[col]] <- format(x, "%Y-%m-%d")
+        }
+    }
+
+    dfr
+}
+
 #' @importClassesFrom QFeatures QFeatures
 #' @importFrom methods is validObject
 #' @importFrom MultiAssayExperiment ExperimentList experiments
-#' @importFrom S4Vectors "mcols<-" mcols
-#' @importFrom stats setNames
-#' @export
-prepareQFeatures <- function(object, sep = ":") {
+#' @noRd
+makeRownamesUnique <- function(object, sep) {
     if (!is(object, "QFeatures"))
         stop("'object' must be a QFeatures object.")
 
@@ -44,6 +79,9 @@ prepareQFeatures <- function(object, sep = ":") {
 }
 
 
+#' @importFrom methods is
+#' @importClassesFrom S4Vectors List
+#' @importFrom stats setNames
 #' @noRd
 rename_assay_link_features <- function(assay_links, old_names, new_names) {
     name_map <- mapply(setNames, new_names, old_names, SIMPLIFY = FALSE)
@@ -66,6 +104,7 @@ rename_assay_link_features <- function(assay_links, old_names, new_names) {
 }
 
 
+#' @importFrom S4Vectors "mcols<-" mcols
 #' @noRd
 rename_hit_features <- function(hit, from, to, name_map) {
     md <- mcols(hit)

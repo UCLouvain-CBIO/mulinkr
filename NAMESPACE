@@ -27,8 +27,8 @@ importFrom(QFeatures,
   assayLink
 )
 importFrom(S4Vectors,
-  "metadata<-",
   "mcols<-",
+  "metadata<-",
   Hits,
   List,
   mcols,
