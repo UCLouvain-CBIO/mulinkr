@@ -15,6 +15,8 @@ prepareQFeatures(object, sep = ":")
 A prepared \code{QFeatures} object.
 }
 \description{
-\code{prepareQFeatures()} makes feature row names globally unique across assays by
-prefixing them with their assay name when needed.
+\code{prepareQFeatures()} makes feature row names globally unique across assays
+by prefixing them with their assay name when needed. It also change any date
+columns of the global \code{colData}, individual \code{rowData} and individual
+\code{colData} to a formatted character type.
 }
