@@ -49,7 +49,7 @@ The created `.h5mu` file can then be used in python or in R.
 
 In python, the file can be read as a [`mulink` object](https://mulink.readthedocs.io/). 
 
-```{python readPy, eval = FALSE}
+```python
 import mudata as md
 import mulink
 
