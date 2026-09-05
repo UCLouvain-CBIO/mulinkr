@@ -1,0 +1,62 @@
+---
+title: "mulinkr"
+author:
+    - name: Léopold Guyot
+output:
+    BiocStyle::html_document:
+        self_contained: yes
+        toc: true
+        toc_float: true
+        toc_depth: 2
+        code_folding: show
+date: "`r BiocStyle::doc_date()`"
+package: "`r BiocStyle::pkg_ver('mulinkr')`"
+vignette: >
+  %\VignetteIndexEntry{mulinkr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE)
+```
+
+The `mulinkr` package writes `QFeatures` objects and their assay links to `.h5mu`
+files and reads them back into R.
+
+Here we will use the example data `feat3` from `QFeatures`.
+
+```{r load-data}
+library(mulinkr)
+data("feat3", package = "QFeatures")
+feat3
+```
+
+We first prepare the object for writing. This makes feature names unique across
+assays when needed and converts date columns to character.
+
+```{r prepare}
+preparedFeat3 <- prepareQFeatures(feat3)
+```
+
+Then we write the prepared object to a temporary `.h5mu` file.
+
+```{r write}
+filePath <- tempfile(fileext = ".h5mu")
+writeLinkH5MU(preparedFeat3, filePath)
+```
+
+Finally, we read the file back as a `QFeatures` object.
+
+```{r read}
+newQFeatures <- readLinkH5MU(filePath)
+newQFeatures
+```
+
+```{r cleanup, include=FALSE}
+unlink(filePath)
+```
+
+```{r sessionInfo}
+sessionInfo()
+```

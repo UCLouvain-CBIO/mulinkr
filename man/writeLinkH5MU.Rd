@@ -12,7 +12,7 @@ writeLinkH5MU(
 )
 }
 \arguments{
-\item{object}{A \code{QFeatures} object prepared with \code{prepareQFeatures()}.}
+\item{object}{A \code{QFeatures} object prepared with \code{\link[=prepareQFeatures]{prepareQFeatures()}}.}
 
 \item{path}{Path of the .h5mu file to create.}
 
@@ -29,3 +29,34 @@ MultiAssayExperiment skeleton; the feature graph held in \code{AssayLinks} is
 written separately to the global \code{.varp} as a \verb{p x p} sparse adjacency
 matrix over the global \code{.var} index.
 }
+\section{Limitations}{
+
+Writing to .h5mu does not preserve all R data types and structures:
+\itemize{
+\item Date and date-time classes (\code{Date}, \code{POSIXct}, and \code{POSIXlt}) are not
+supported natively and must be converted before writing.
+\item The distinction between numeric \code{NA} and \code{NaN} is lost: both are read back
+as \code{NaN} by \code{\link[=readLinkH5MU]{readLinkH5MU()}}.
+\item Complex data structures in \code{rowData} or \code{metadata} are not fully supported.
+Matrix-valued \code{rowData} columns are dropped with a warning. Unsupported
+metadata objects, such as \code{scpModel} objects (class \code{ScpModel}), must be
+simplified before writing.
+\item Unused factor levels are not preserved.
+\item Feature row names must be globally unique across all sets. Duplicate
+row names cause an error.
+\item Integer and logical columns containing \code{NA} in global \code{colData},
+set-specific \code{colData}, or \code{rowData} are converted to doubles with a
+warning. Their original types are lost; logical values become \code{1} and
+\code{0}, while missing values remain missing.
+}
+
+Use \code{object <- prepareQFeatures(object)} before writing to address some of
+these limitations. \code{\link[=prepareQFeatures]{prepareQFeatures()}} converts date and date-time columns
+in global \code{colData} and set-specific \code{rowData} and \code{colData} to formatted
+character strings, converts \code{scpModel} objects in set metadata to lists,
+and prefixes feature row names with set names when needed to make them
+globally unique, updating the set links accordingly. It does not restore
+the original date classes, missing-value distinction, unused factor levels,
+or integer/logical column types when the file is read back.
+}
+

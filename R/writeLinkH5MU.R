@@ -305,8 +305,34 @@ read_var_names_checked <- function(path, expected) {
 #' written separately to the global `.varp` as a `p x p` sparse adjacency
 #' matrix over the global `.var` index.
 #'
+#' @section Limitations:
+#' Writing to .h5mu does not preserve all R data types and structures:
+#' * Date and date-time classes (`Date`, `POSIXct`, and `POSIXlt`) are not
+#'   supported natively and must be converted before writing.
+#' * The distinction between numeric `NA` and `NaN` is lost: both are read back
+#'   as `NaN` by [readLinkH5MU()].
+#' * Complex data structures in `rowData` or `metadata` are not fully supported.
+#'   Matrix-valued `rowData` columns are dropped with a warning. Unsupported
+#'   metadata objects, such as `scpModel` objects (class `ScpModel`), must be
+#'   simplified before writing.
+#' * Unused factor levels are not preserved.
+#' * Feature row names must be globally unique across all sets. Duplicate
+#'   row names cause an error.
+#' * Integer and logical columns containing `NA` in global `colData`,
+#'   set-specific `colData`, or `rowData` are converted to doubles with a
+#'   warning. Their original types are lost; logical values become `1` and
+#'   `0`, while missing values remain missing.
 #'
-#' @param object A `QFeatures` object prepared with `prepareQFeatures()`.
+#' Use `object <- prepareQFeatures(object)` before writing to address some of
+#' these limitations. [prepareQFeatures()] converts date and date-time columns
+#' in global `colData` and set-specific `rowData` and `colData` to formatted
+#' character strings, converts `scpModel` objects in set metadata to lists,
+#' and prefixes feature row names with set names when needed to make them
+#' globally unique, updating the set links accordingly. It does not restore
+#' the original date classes, missing-value distinction, unused factor levels,
+#' or integer/logical column types when the file is read back.
+#'
+#' @param object A `QFeatures` object prepared with [prepareQFeatures()].
 #' @param path Path of the .h5mu file to create.
 #' @param feature_mapping_key Key to store the feature graph under in `.varp`.
 #' @param overwrite Whether to replace `path` if it already exists.

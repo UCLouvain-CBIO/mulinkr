@@ -163,12 +163,17 @@ assay_links_from_feature_mapping <- function(experiments,
 
 #' Read an .h5mu file and create a `QFeatures` object.
 #'
+#' @section Limitations:
+#' Missing numeric values written as `NA` or `NaN` are read as `NaN`.
+#' The original distinction between `NA` and `NaN` is not preserved.
+#' See [writeLinkH5MU()] for other limitations of the write/read conversion.
+#'
 #' @param path Path to the .h5mu file.
 #' @param feature_mapping_key Key of the feature graph in the global `.varp`.
 #' @param backed Passed to `MuData::readH5MU()`.
 #'
 #' @return A `QFeatures` object. Assays and their links come from the file; if
-#'     the `.varp` key is absent the assays are returned unlinked.
+#'     the `.varp` key is absent the sets are returned unlinked.
 #' @importClassesFrom QFeatures QFeatures
 #' @importFrom methods new validObject
 #' @importFrom MultiAssayExperiment experiments sampleMap
