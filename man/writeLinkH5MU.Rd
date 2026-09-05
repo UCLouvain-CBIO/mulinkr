@@ -8,19 +8,15 @@ writeLinkH5MU(
   object,
   path,
   feature_mapping_key = "feature_mapping",
-  prefix = c("collision", "always", "never"),
-  sep = ":",
   overwrite = FALSE
 )
 }
 \arguments{
-\item{object}{A \code{QFeatures} object.}
+\item{object}{A \code{QFeatures} object prepared with \code{prepareQFeatures()}.}
 
 \item{path}{Path of the .h5mu file to create.}
 
 \item{feature_mapping_key}{Key to store the feature graph under in \code{.varp}.}
-
-\item{prefix, sep}{Passed to \code{feature_index()}.}
 
 \item{overwrite}{Whether to replace \code{path} if it already exists.}
 }
@@ -29,7 +25,7 @@ writeLinkH5MU(
 }
 \description{
 Inverse of \code{readLinkH5MU()}. \code{MuData::writeH5MU()} covers the
-MultiAssayExperiment skeleton; the feature graph held in \code{AssayLinks} has no
-place there, so it is written separately to the global \code{.varp} as a \verb{p x p}
-sparse adjacency matrix over the global \code{.var} index.
+MultiAssayExperiment skeleton; the feature graph held in \code{AssayLinks} is
+written separately to the global \code{.varp} as a \verb{p x p} sparse adjacency
+matrix over the global \code{.var} index.
 }
