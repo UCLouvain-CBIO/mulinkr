@@ -15,8 +15,24 @@ readLinkH5MU(path, feature_mapping_key = "feature_mapping", backed = FALSE)
 }
 \value{
 A \code{QFeatures} object. Assays and their links come from the file; if
-the \code{.varp} key is absent the assays are returned unlinked.
+the \code{.varp} key is absent the sets are returned unlinked.
 }
 \description{
 Read an .h5mu file and create a \code{QFeatures} object.
+}
+\section{Limitations}{
+
+Missing numeric values written as \code{NA} or \code{NaN} are read as \code{NaN}.
+The original distinction between \code{NA} and \code{NaN} is not preserved.
+See \code{\link[=writeLinkH5MU]{writeLinkH5MU()}} for other limitations of the write/read conversion.
+}
+
+\examples{
+data("feat3", package = "QFeatures")
+preparedFeat3 <- prepareQFeatures(feat3)
+filePath <- tempfile(fileext = ".h5mu")
+writeLinkH5MU(preparedFeat3, filePath)
+newQFeatures <- readLinkH5MU(filePath)
+newQFeatures
+unlink(filePath)
 }
