@@ -39,7 +39,21 @@ filePath <- tempfile(fileext = ".h5mu")
 writeLinkH5MU(preparedFeat3, filePath)
 ```
 
-Finally, we read the file back as a `QFeatures` object.
+The created `.h5mu` file can then be used in python or in R.
+
+In python, the file can be read as a [`mulink`
+object](https://mulink.readthedocs.io/).
+
+``` python
+import mudata as md
+import mulink
+
+mdata = md.read_h5mu("yourFile.h5mu")
+
+print(mdata)
+```
+
+In R, the object can be reimported back as a `QFeatures` object.
 
 ``` r
 
