@@ -240,7 +240,7 @@ write_varp <- function(file, key, mat) {
 #' @importFrom methods is
 #' @importFrom MuData writeH5MU
 #' @importFrom MultiAssayExperiment ExperimentList experiments
-#' @importFrom rhdf5 H5Fopen H5Fclose
+#' @importFrom rhdf5 H5Fopen H5Fclose H5Iis_valid H5Iget_type
 #' @importFrom SummarizedExperiment colData "colData<-" rowData "rowData<-"
 #' @export
 writeLinkH5MU <- function(object, path,
