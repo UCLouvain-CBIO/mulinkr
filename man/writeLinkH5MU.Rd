@@ -60,3 +60,11 @@ the original date classes, missing-value distinction, unused factor levels,
 or integer/logical column types when the file is read back.
 }
 
+\examples{
+data("feat3", package = "QFeatures")
+preparedFeat3 <- prepareQFeatures(feat3)
+filePath <- tempfile(fileext = ".h5mu")
+writeLinkH5MU(preparedFeat3, filePath)
+file.exists(filePath)
+unlink(filePath)
+}

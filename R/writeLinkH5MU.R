@@ -343,6 +343,13 @@ read_var_names_checked <- function(path, expected) {
 #' @importFrom methods is
 #' @importFrom MuData writeH5MU
 #' @importFrom rhdf5 H5Iis_valid H5Iget_type
+#' @examples
+#' data("feat3", package = "QFeatures")
+#' preparedFeat3 <- prepareQFeatures(feat3)
+#' filePath <- tempfile(fileext = ".h5mu")
+#' writeLinkH5MU(preparedFeat3, filePath)
+#' file.exists(filePath)
+#' unlink(filePath)
 #' @export
 writeLinkH5MU <- function(object, path,
                                feature_mapping_key = "feature_mapping",

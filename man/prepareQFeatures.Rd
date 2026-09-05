@@ -20,3 +20,9 @@ by prefixing them with their assay name when needed. It also change any date
 columns of the global \code{colData}, individual \code{rowData} and individual
 \code{colData} to a formatted character type.
 }
+\examples{
+data("feat3", package = "QFeatures")
+rownames(feat3)
+preparedFeat3 <- prepareQFeatures(feat3)
+rownames(preparedFeat3)
+}

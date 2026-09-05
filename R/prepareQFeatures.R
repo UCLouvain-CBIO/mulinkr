@@ -11,6 +11,11 @@
 #' @return A prepared `QFeatures` object.
 #' @importFrom MultiAssayExperiment ExperimentList experiments
 #' @importFrom SummarizedExperiment "colData<-" "rowData<-" colData rowData
+#' @examples
+#' data("feat3", package = "QFeatures")
+#' rownames(feat3)
+#' preparedFeat3 <- prepareQFeatures(feat3)
+#' rownames(preparedFeat3)
 #' @export
 prepareQFeatures <- function(object, sep = ":") {
     object <- makeRownamesUnique(object, sep)

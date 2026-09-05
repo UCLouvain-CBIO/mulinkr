@@ -181,6 +181,14 @@ assay_links_from_feature_mapping <- function(experiments,
 #' @importFrom QFeatures AssayLinks
 #' @importFrom S4Vectors metadata
 #' @importFrom SummarizedExperiment colData
+#' @examples
+#' data("feat3", package = "QFeatures")
+#' preparedFeat3 <- prepareQFeatures(feat3)
+#' filePath <- tempfile(fileext = ".h5mu")
+#' writeLinkH5MU(preparedFeat3, filePath)
+#' newQFeatures <- readLinkH5MU(filePath)
+#' newQFeatures
+#' unlink(filePath)
 #' @export
 readLinkH5MU <- function(path,
                                 feature_mapping_key = "feature_mapping",
