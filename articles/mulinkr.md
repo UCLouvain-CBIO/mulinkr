@@ -76,7 +76,7 @@ newQFeatures
 sessionInfo()
 #> R version 4.6.1 (2026-06-24)
 #> Platform: x86_64-pc-linux-gnu
-#> Running under: Ubuntu 24.04.4 LTS
+#> Running under: Ubuntu 24.04.5 LTS
 #> 
 #> Matrix products: default
 #> BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
@@ -101,13 +101,13 @@ sessionInfo()
 #>  [1] tidyselect_1.2.1            dplyr_1.2.1                
 #>  [3] farver_2.1.2                S7_0.2.2                   
 #>  [5] fastmap_1.2.0               SingleCellExperiment_1.34.0
-#>  [7] lazyeval_0.2.3              nipals_1.0                 
+#>  [7] lazyeval_0.2.3              nipals_1.2                 
 #>  [9] digest_0.6.39               lifecycle_1.0.5            
 #> [11] cluster_2.1.8.2             ProtGenerics_1.44.0        
 #> [13] magrittr_2.0.5              compiler_4.6.1             
 #> [15] rlang_1.3.0                 sass_0.4.10                
 #> [17] tools_4.6.1                 igraph_2.3.3               
-#> [19] yaml_2.3.12                 knitr_1.51                 
+#> [19] yaml_2.3.12                 knitr_1.52                 
 #> [21] S4Arrays_1.12.0             htmlwidgets_1.6.4          
 #> [23] DelayedArray_0.38.2         plyr_1.8.9                 
 #> [25] RColorBrewer_1.1-3          abind_1.4-8                
