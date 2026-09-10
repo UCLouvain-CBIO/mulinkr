@@ -1,8 +1,16 @@
 Package: mulinkr
 Title: Read and write `QFeatures` object from .h5mu files
 Version: 0.99.1
-Authors@R:
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+Authors@R: c(person("Léopold", "Guyot",
+                     email = "leopold.guyot@uclouvain.be",
+                     comment = c(ORCID = "0009-0005-2217-3855"),
+                     role = c("aut", "cre")),
+             person("Laurent", "Gatto",
+                    email = "laurent.gatto@uclouvain.be",
+                    comment = c(ORCID = "0000-0002-1520-2268"),
+                    role = c("aut")),
+             person("Lucas", "Diedrich", role = "ctb")
+             )
 Description: Read and write QFeatures objects from .h5mu files. This package
     adapts the first implementation by Lucas Diedrich
     <https://github.com/lucas-diedrich/ms-scverse-bioconductor>.
